@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Travelmantics</string>
+    <string name="email">Email</string>
+    <string name="first_and_last_name">First and Last name</string>
+    <string name="save">Save</string>
+    <string name="title">Title</string>
+    <string name="amount">Amount</string>
+    <string name="description">Description</string>
+   
+</resources>
