@@ -1,6 +1,7 @@
 package com.ensontech.travelmantics.Activities;
 
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.MediaStore;
@@ -24,18 +25,21 @@ import android.widget.Toast;
 import com.ensontech.travelmantics.FirebaseUtil;
 import com.ensontech.travelmantics.R;
 import com.ensontech.travelmantics.TravelDeal;
+import com.firebase.ui.auth.data.model.Resource;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
 
 public class AdminActivity extends AppCompatActivity {
     private EditText mTitle, mAmount, mDescription;
-    private Toolbar mToolbar;
+    
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mReference;
     private String amount, title, description;
@@ -50,15 +54,16 @@ public class AdminActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin);
         final Intent intent = getIntent();
-
+       mFirebaseDatabase=FirebaseUtil.mfireBaseDatabase;
+       mReference=mFirebaseDatabase.getReference().child("traveldeals");
 
         mTitle = findViewById(R.id.title);
         mAmount = findViewById(R.id.amount);
         mDescription = findViewById(R.id.description);
-        mToolbar = findViewById(R.id.toolBar);
+      
         mUploadImage=findViewById(R.id.add_image);
         mImage=findViewById(R.id.image);
-        setSupportActionBar(mToolbar);
+        
         
         TravelDeal deal = intent.getParcelableExtra("deals");
         if (deal == null) {
@@ -68,6 +73,7 @@ public class AdminActivity extends AppCompatActivity {
         mTitle.setText(deal.getTitle());
         mAmount.setText(deal.getAmount());
         mDescription.setText(deal.getDescription());
+        showImage(deal.getImageUrl());
     mUploadImage.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -153,6 +159,20 @@ public class AdminActivity extends AppCompatActivity {
         }
         else {
             mReference.child(mDeal.getId()).removeValue();
+            if (!(mDeal.getImageName()!=null&&mDeal.getImageName().isEmpty()==false)) {
+                StorageReference ref = FirebaseUtil.mStorage.getReference().child(mDeal.getImageName());
+                ref.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Toast.makeText(getApplicationContext(), "Deleted Sucessfully", Toast.LENGTH_SHORT).show();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(getApplicationContext(), "Fail to Delete", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         }
         
     }
@@ -165,6 +185,7 @@ public class AdminActivity extends AppCompatActivity {
         mTitle.setEnabled(isEnabled);
         mDescription.setEnabled(isEnabled);
         mAmount.setEnabled(isEnabled);
+        mUploadImage.setEnabled(isEnabled);
     }
 
     @Override
@@ -174,26 +195,46 @@ public class AdminActivity extends AppCompatActivity {
         switch (requestCode){
             case RESULT_LOAD_IMG:
                 Uri selectedImage = data.getData();
-                try {
-                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),selectedImage);
-                    mImage.setImageBitmap(bitmap);
+               
+                    mImage.setImageURI(selectedImage);
                     StorageReference reference=FirebaseUtil.mStorageRef.child(selectedImage.getLastPathSegment());
-                    reference.putFile(selectedImage).addOnSuccessListener(this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    reference.putFile(selectedImage).addOnSuccessListener(
+                            new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
-                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            Toast.makeText(getApplicationContext(),"Sucessful",Toast.LENGTH_SHORT).show();
+                        public void onSuccess(final UploadTask.TaskSnapshot taskSnapshot) {
+                            String pictureName=taskSnapshot.getStorage().getPath();
+                            mDeal.setImageName(pictureName);
+                            taskSnapshot.getStorage().getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    mDeal.setImageUrl(String.valueOf(uri));
+                                  
+                                    showImage(String.valueOf(uri));
+                                   
+                                   
+                                }
+                            });
                         }
-                    }).addOnFailureListener(this, new OnFailureListener() {
+                    }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
                         @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Toast.makeText(getApplicationContext(),"failed",Toast.LENGTH_SHORT).show();
+                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                            double currentProgress = (100 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                            long mProgress=0;
+                            if( currentProgress > (mProgress + 15)){
+                                mProgress = (100 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                                //Log.d(TAG, "onProgress: upload is " + mProgress + "& done");
+                                Toast.makeText(getApplicationContext(), mProgress + "%", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     });
-                } catch (IOException e) {
-                    Log.i("TAG", "Some exception " + e);
-                }
-                break;
+                
         }
+        }
+        private void showImage(String url){
+         if (url !=null&& url.isEmpty()==false){
+             int width = Resources.getSystem().getDisplayMetrics().widthPixels;
+             Picasso.get().load(url).resize(width,width*2/3).centerCrop().into(mImage);
+         }
         }
     }
 

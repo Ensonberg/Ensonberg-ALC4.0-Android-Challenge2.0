@@ -9,13 +9,23 @@ public class TravelDeal implements Parcelable {
     private String amount;
     private String description;
     private String imageUrl;
+    private String imageName;
 
-    public TravelDeal(String title, String amount, String description, String imageUrl) {
+    public String getImageName() {
+        return imageName;
+    }
+
+    public void setImageName(String imageName) {
+        this.imageName = imageName;
+    }
+
+    public TravelDeal(String title, String amount, String description, String imageUrl,String imageName) {
         
-        this.title = title;
-        this.amount = amount;
-        this.description = description;
-        this.imageUrl = imageUrl;
+        this.setTitle(title);
+        this.setAmount(amount);
+        this.setDescription(description);
+        this.setImageUrl(imageUrl);
+        this.setImageName(imageName);
     }
     public TravelDeal(){
         

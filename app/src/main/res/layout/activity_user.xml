@@ -5,16 +5,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".Activities.UserActivity">
-<android.support.v7.widget.Toolbar
-    android:id="@+id/toolBar"
-    android:background="@color/colorPrimary"
-    android:layout_width="match_parent"
-    android:layout_height="?attr/actionBarSize"></android.support.v7.widget.Toolbar>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recylerview"
         android:layout_margin="8dp"
         tools:listitem="@layout/item_layout"
-        android:layout_below="@id/toolBar"
+       
         android:layout_width="match_parent"
         android:layout_height="match_parent"></android.support.v7.widget.RecyclerView>
 </RelativeLayout>
